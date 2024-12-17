@@ -1,13 +1,15 @@
 use std::env;
 use std::io::Result;
 
+use bytemuck::checked::from_bytes;
+use bytemuck::{bytes_of, Pod, Zeroable};
 use device_query::{DeviceQuery, DeviceState, MouseState};
 use enigo::{Enigo, Mouse, Settings};
-use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
-#[derive(Serialize, Deserialize)]
+#[repr(C)] // Ensure the struct has a consistent memory layout
+#[derive(Copy, Clone, Pod, Zeroable)]
 struct MouseEvent {
     x: i32,
     y: i32,
@@ -23,13 +25,13 @@ async fn server() -> Result<()> {
     let settings = Settings::default();
     let mut enigo = Enigo::new(&settings).unwrap();
 
-    let mut buffer = [0u8; 1024];
+    let mut buffer = [0u8; std::mem::size_of::<MouseEvent>()];
     while let Ok(size) = socket.read(&mut buffer).await {
         if size == 0 {
             break;
         }
 
-        let event: MouseEvent = serde_json::from_slice(&buffer[..size]).unwrap();
+        let event: &MouseEvent = from_bytes(&buffer);
         println!("Recieved MouseEvent: x = {}, y = {}", event.x, event.y);
         enigo
             .move_mouse(event.x, event.y, enigo::Coordinate::Abs)
@@ -57,9 +59,8 @@ async fn client(server_ip: Option<String>) -> Result<()> {
                 y: current_position.1,
             };
 
-            let data = serde_json::to_vec(&event).unwrap();
-            socket.write_all(&data).await?;
-
+            let bytes = bytes_of(&event);
+            socket.write_all(bytes).await?;
             last_position = current_position;
         }
 
