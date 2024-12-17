@@ -2,7 +2,7 @@ use std::env;
 use std::net::SocketAddr;
 use std::time::{Duration, Instant};
 
-use bytemuck::{bytes_of, from_bytes, Pod, Zeroable};
+use bytemuck::{bytes_of, pod_read_unaligned, Pod, Zeroable};
 use device_query::{DeviceQuery, DeviceState, MouseState};
 use enigo::{Enigo, Mouse, Settings};
 use std::io::Result;
@@ -51,7 +51,7 @@ async fn server() -> Result<()> {
     loop {
         if let Ok((size, addr)) = socket.recv_from(&mut buffer).await {
             if size == std::mem::size_of::<MouseDelta>() {
-                let event: &MouseDelta = from_bytes(&buffer);
+                let event: MouseDelta = pod_read_unaligned(&buffer);
                 println!(
                     "Recieved from {}: dx = {}, dy = {}, ts = {}",
                     addr, event.dx, event.dy, event.timestamp
