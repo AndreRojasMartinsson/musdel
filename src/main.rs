@@ -39,9 +39,10 @@ async fn server() -> Result<()> {
     Ok(())
 }
 
-async fn client() -> Result<()> {
-    let mut socket = TcpStream::connect("0.0.0.0:8005").await?;
-    println!("Connected to server.");
+async fn client(server_ip: Option<String>) -> Result<()> {
+    let server_ip = server_ip.unwrap_or("0.0.0.0".to_string());
+    let mut socket = TcpStream::connect(format!("{}:8005", server_ip)).await?;
+    println!("Connected to server: {}:8005", server_ip);
 
     let device_state = DeviceState::new();
     let mut last_position = (0, 0);
@@ -68,9 +69,12 @@ async fn client() -> Result<()> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if let Some(command) = env::args().nth(1) {
+    let command = env::args().nth(1);
+    let server_ip = env::args().nth(2);
+
+    if let Some(command) = command {
         match command.as_ref() {
-            "client" => client().await?,
+            "client" => client(server_ip).await?,
             "server" => server().await?,
             _ => panic!("Incorrect command. Either client, or server is valid."),
         }
