@@ -58,7 +58,7 @@ async fn server() -> Result<()> {
                 );
 
                 enigo
-                    .move_mouse(event.dx.into(), event.dy.into(), enigo::Coordinate::Rel)
+                    .move_mouse(event.dx as i32, event.dy as i32, enigo::Coordinate::Rel)
                     .unwrap();
             }
         }
