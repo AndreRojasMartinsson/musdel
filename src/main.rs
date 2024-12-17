@@ -11,8 +11,8 @@ use tokio::net::{TcpListener, TcpStream};
 #[repr(C)] // Ensure the struct has a consistent memory layout
 #[derive(Copy, Clone, Pod, Zeroable)]
 struct MouseEvent {
-    x: i32,
-    y: i32,
+    x: i16,
+    y: i16,
 }
 
 async fn server() -> Result<()> {
@@ -34,7 +34,7 @@ async fn server() -> Result<()> {
         let event: &MouseEvent = from_bytes(&buffer);
         println!("Recieved MouseEvent: x = {}, y = {}", event.x, event.y);
         enigo
-            .move_mouse(event.x, event.y, enigo::Coordinate::Abs)
+            .move_mouse(event.x.into(), event.y.into(), enigo::Coordinate::Abs)
             .unwrap();
     }
 
@@ -55,8 +55,8 @@ async fn client(server_ip: Option<String>) -> Result<()> {
 
         if current_position != last_position {
             let event = MouseEvent {
-                x: current_position.0,
-                y: current_position.1,
+                x: current_position.0 as i16,
+                y: current_position.1 as i16,
             };
 
             let bytes = bytes_of(&event);
